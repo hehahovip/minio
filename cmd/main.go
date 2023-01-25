@@ -96,6 +96,7 @@ VERSION:
 `
 
 func newApp(name string) *cli.App {
+	// 仅仅构建一个空的app，具体参数需要再run()方法中指定。
 	// Collection of minio commands currently supported are.
 	commands := []cli.Command{}
 
@@ -192,14 +193,17 @@ func Main(args []string) {
 	appName := filepath.Base(args[0])
 
 	if os.Getenv("_MINIO_DEBUG_NO_EXIT") != "" {
+		// new 一个新的函数 freeze，赋值给logger的退出函数。
 		freeze := func(_ int) {
 			// Infinite blocking op
 			<-make(chan struct{})
 		}
 
+		// 目的是为了调试是，出错不退出程序，方便dump
 		// Override the logger os.Exit()
 		logger.ExitFunc = freeze
 
+		// 程序捕捉到错误后，不退出，直接freeze。
 		defer func() {
 			if err := recover(); err != nil {
 				fmt.Println("panic:", err)
@@ -210,6 +214,7 @@ func Main(args []string) {
 		}()
 	}
 
+	// new 真正的app， 把参数赋给app
 	// Run the app - exit on error.
 	if err := newApp(appName).Run(args); err != nil {
 		os.Exit(1) //nolint:gocritic
